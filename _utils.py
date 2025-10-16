@@ -257,7 +257,7 @@ def wildcard_replace(data: bytes, pattern: str | list, replace: str | list):
         if p == "??":
             regex_bytes += b"(.)"
             if r == "??":
-                repl_bytes += b"\\" + str(group_count).encode()
+                repl_bytes += f"\\g<{group_count}>".encode()
                 patched_bytes += b"(.)"
             else:
                 repl_bytes += bytes.fromhex(r)
