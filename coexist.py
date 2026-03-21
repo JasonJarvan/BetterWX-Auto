@@ -1,17 +1,38 @@
+import argparse
+
 from _utils import *
 
 title("Coexist")
 print("\n - Create multiple WeChat executables to use different accounts.")
 
+
+def parse_args():
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("-n", "--number")
+    parser.add_argument("--exe")
+    parser.add_argument("--dll")
+    parser.add_argument("--no-pause", action="store_true")
+    return parser.parse_args()
+
+
+args = parse_args()
+
 # Number
-n = input(f"\n{BOLD}Wechat Number{NO_BOLD} (0~9): ")
+n = args.number if args.number is not None else input(f"\n{BOLD}Wechat Number{NO_BOLD} (0~9): ")
 if len(n) != 1 or not n in "0123456789":
     print(f"{RED}[ERR] Invalid number{RESET}")
-    pause()
+    if not args.no_pause:
+        pause()
     exit()
 
 # [Weixin.exe]
-exe = exepath(input(f"\n{BOLD}Weixin.exe{NO_BOLD} (leave blank = auto detect): "))
+if args.exe is None and args.no_pause:
+    exe_input = ""
+elif args.exe is None:
+    exe_input = input(f"\n{BOLD}Weixin.exe{NO_BOLD} (leave blank = auto detect): ")
+else:
+    exe_input = args.exe
+exe = exepath(exe_input)
 data = load(exe)
 # Redirect Weixin.dll -> Weixin.dl2
 print(f"\n> Redirecting Weixin.dll -> Weixin.dl{n}")
@@ -23,7 +44,13 @@ new_exe = exe.with_name(f"Weixin{n}.exe")
 save(new_exe, data)
 
 # [Weixin.dll]
-dll = dllpath(input(f"\n{BOLD}Weixin.dll{NO_BOLD} (leave blank = auto detect): "))
+if args.dll is None and args.no_pause:
+    dll_input = ""
+elif args.dll is None:
+    dll_input = input(f"\n{BOLD}Weixin.dll{NO_BOLD} (leave blank = auto detect): ")
+else:
+    dll_input = args.dll
+dll = dllpath(dll_input)
 data = load(dll)
 # Redirect global_config -> global_conf2g
 # Just search 'global_config' and you'll find the pattern.
@@ -64,4 +91,5 @@ data = replace(data, WINDOW_PATTERN, WINDOW_REPLACE)
 # Rename Weixin.dll -> Weixin.dl2
 new_dll = dll.with_name(f"Weixin.dl{n}")
 save(new_dll, data)
-pause()
+if not args.no_pause:
+    pause()

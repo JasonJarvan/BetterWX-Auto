@@ -2,6 +2,7 @@ import os
 import re
 import shutil
 import pathlib
+from typing import Iterable
 
 if os.name == "nt":
     # ANSI Support for OLD Windows
@@ -37,16 +38,41 @@ def wxbasepath():
         exit()
 
 
+def iter_version_dirs(base: pathlib.Path) -> Iterable[pathlib.Path]:
+    for child in base.iterdir():
+        if not child.is_dir():
+            continue
+        if re.fullmatch(r"\d+(?:\.\d+)+", child.name):
+            yield child
+
+
+def version_key(path: pathlib.Path):
+    return tuple(int(part) for part in path.name.split("."))
+
+
+def get_valid_dll_versions(base: pathlib.Path) -> list[pathlib.Path]:
+    versions = []
+    for version in iter_version_dirs(base):
+        if (version / "Weixin.dll").is_file():
+            versions.append(version)
+    return sorted(versions, key=version_key, reverse=True)
+
+
+def autodetect_dll(base: pathlib.Path):
+    versions = get_valid_dll_versions(base)
+    if versions:
+        dll = versions[0] / "Weixin.dll"
+        print(f"{GREEN}[auto]{RESET} {dll}")
+        return dll
+    print(f"{RED}[ERR] Weixin.dll not found in '{base}'{RESET}")
+    pause()
+    exit()
+
+
 def dllpath(dllpath: str):
     if not dllpath:
         base = wxbasepath()
-        for version in base.iterdir():
-            if version.is_dir() and version.name.startswith("4."):
-                print(f"{GREEN}[auto]{RESET} {version / 'Weixin.dll'}")
-                return version / "Weixin.dll"
-        print(f"{RED}[ERR] Weixin.dll not found in '{base}'{RESET}")
-        pause()
-        exit()
+        return autodetect_dll(base)
     dllpath = dllpath.strip('"').strip("'")
     return path(dllpath)
 
